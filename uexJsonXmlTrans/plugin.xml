@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<uexplugins>
+    <plugin
+        className="org.zywx.wbpalmstar.plugin.jsonxmltrans.EUExJsonXmlTrans" uexName="uexJsonXmlTrans" >
+        <method name="json2xml" />
+        <method name="xml2json" />
+    </plugin>
+</uexplugins>
