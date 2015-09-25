@@ -1,6 +1,8 @@
 package org.zywx.wbpalmstar.plugin.jsonxmltrans;
 
 import android.content.Context;
+import android.os.Bundle;
+import android.os.Message;
 import android.util.Log;
 
 import org.apache.http.util.EncodingUtils;
@@ -20,12 +22,13 @@ import java.io.InputStream;
 public class EUExJsonXmlTrans extends EUExBase {
     public static final String TAG = "EUExJsonXmlTrans";
     public static final String FUN_ON_CALLBACK = "javascript:uexJsonXmlTrans.cbTransFinished";
+    private static final String BUNDLE_DATA = "data";
+    private static final int MSG_JSON2XML = 1;
+    private static final int MSG_XML2JSON = 2;
     private static final String CAN_NOT_GET_CONTENT = "未读取到文件内容，请检查文件路径";
     private static final String NO_PARAM = "请传入参数";
     private static final String JSON_PARSE_ERROR = "JSON 解析出错";
     private static final String XML_PARSE_ERROR = "XML 解析出错";
-
-
 
     private Context context;
 
@@ -33,7 +36,20 @@ public class EUExJsonXmlTrans extends EUExBase {
         super(context, eBrowserView);
         this.context = context;
     }
-    public void json2xml(String [] params) {
+    public void json2xml(String[] params) {
+        if (params == null || params.length < 1) {
+            errorCallback(0, 0, "error params!");
+            return;
+        }
+        Message msg = new Message();
+        msg.obj = this;
+        msg.what = MSG_JSON2XML;
+        Bundle bd = new Bundle();
+        bd.putStringArray(BUNDLE_DATA, params);
+        msg.setData(bd);
+        mHandler.sendMessage(msg);
+    }
+    private void json2xmlMsg(String [] params) {
         String result;
         if (params.length == 0) {
             result = NO_PARAM;
@@ -56,8 +72,21 @@ public class EUExJsonXmlTrans extends EUExBase {
         onCallback(FUN_ON_CALLBACK + "('" + result + "')");
     }
 
+    public void xml2json(String[] params) {
+        if (params == null || params.length < 1) {
+            errorCallback(0, 0, "error params!");
+            return;
+        }
+        Message msg = new Message();
+        msg.obj = this;
+        msg.what = MSG_XML2JSON;
+        Bundle bd = new Bundle();
+        bd.putStringArray(BUNDLE_DATA, params);
+        msg.setData(bd);
+        mHandler.sendMessage(msg);
+    }
 
-    public void xml2json(String [] params) {
+    private void xml2jsonMsg(String [] params) {
         String result;
         if (params.length == 0) {
             result = NO_PARAM;
@@ -77,6 +106,25 @@ public class EUExJsonXmlTrans extends EUExBase {
         }
         onCallback(FUN_ON_CALLBACK + "('" + result + "')");
     }
+
+    @Override
+    public void onHandleMessage(Message message) {
+        if(message == null){
+            return;
+        }
+        Bundle bundle = message.getData();
+        switch (message.what) {
+            case MSG_JSON2XML:
+                json2xmlMsg(bundle.getStringArray(BUNDLE_DATA));
+                break;
+            case MSG_XML2JSON:
+                xml2jsonMsg(bundle.getStringArray(BUNDLE_DATA));
+                break;
+            default:
+                super.onHandleMessage(message);
+        }
+    }
+
 
     public String getText(String param) {
         String data = null;
