@@ -1,8 +1,7 @@
 package org.zywx.wbpalmstar.plugin.jsonxmltrans;
 
 import android.content.Context;
-import android.os.Bundle;
-import android.os.Message;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.apache.http.util.EncodingUtils;
@@ -12,6 +11,7 @@ import org.json.XML;
 import org.zywx.wbpalmstar.base.BUtility;
 import org.zywx.wbpalmstar.engine.EBrowserView;
 import org.zywx.wbpalmstar.engine.universalex.EUExBase;
+import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,9 +22,6 @@ import java.io.InputStream;
 public class EUExJsonXmlTrans extends EUExBase {
     public static final String TAG = "EUExJsonXmlTrans";
     public static final String FUN_ON_CALLBACK = "javascript:uexJsonXmlTrans.cbTransFinished";
-    private static final String BUNDLE_DATA = "data";
-    private static final int MSG_JSON2XML = 1;
-    private static final int MSG_XML2JSON = 2;
     private static final String CAN_NOT_GET_CONTENT = "未读取到文件内容，请检查文件路径";
     private static final String NO_PARAM = "请传入参数";
     private static final String JSON_PARSE_ERROR = "JSON 解析出错";
@@ -36,96 +33,78 @@ public class EUExJsonXmlTrans extends EUExBase {
         super(context, eBrowserView);
         this.context = context;
     }
-    public void json2xml(String[] params) {
-        if (params == null || params.length < 1) {
-            errorCallback(0, 0, "error params!");
+
+    public void json2xml(final String[] params) {
+        if (params == null || params.length == 0) {
+            onCallback(FUN_ON_CALLBACK + "('" + NO_PARAM +"')");
             return;
         }
-        Message msg = new Message();
-        msg.obj = this;
-        msg.what = MSG_JSON2XML;
-        Bundle bd = new Bundle();
-        bd.putStringArray(BUNDLE_DATA, params);
-        msg.setData(bd);
-        mHandler.sendMessage(msg);
-    }
-    private void json2xmlMsg(String [] params) {
-        String result;
-        if (params.length == 0) {
-            result = NO_PARAM;
-            onCallback(FUN_ON_CALLBACK + "('" + result +"')");
-            return;
+        String funcId = null;
+        if (params.length == 2) {
+            funcId = params[1];
         }
+
         String data = getText(params[0]);
-        if (CAN_NOT_GET_CONTENT.equals(data)) {
-            onCallback(FUN_ON_CALLBACK + "('" + data +"')");
-            return;
-        }
-        try {
-            JSONObject obj = new JSONObject (data);
-            result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + XML.toString(obj);
-        } catch (JSONException e) {
-            Log.e(TAG, e.getMessage());
-            e.printStackTrace();
-            result = JSON_PARSE_ERROR;
-        }
-        onCallback(FUN_ON_CALLBACK + "('" + result + "')");
-    }
-
-    public void xml2json(String[] params) {
-        if (params == null || params.length < 1) {
-            errorCallback(0, 0, "error params!");
-            return;
-        }
-        Message msg = new Message();
-        msg.obj = this;
-        msg.what = MSG_XML2JSON;
-        Bundle bd = new Bundle();
-        bd.putStringArray(BUNDLE_DATA, params);
-        msg.setData(bd);
-        mHandler.sendMessage(msg);
-    }
-
-    private void xml2jsonMsg(String [] params) {
         String result;
-        if (params.length == 0) {
-            result = NO_PARAM;
-            onCallback(FUN_ON_CALLBACK + "('" + result +"')");
+        if (TextUtils.isEmpty(data)) {
+            result = CAN_NOT_GET_CONTENT;
+        } else {
+            try {
+                JSONObject obj = new JSONObject(data);
+                result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + XML.toString(obj);
+            } catch (JSONException e) {
+                Log.e(TAG, e.getMessage());
+                e.printStackTrace();
+                result = JSON_PARSE_ERROR;
+            }
+        }
+        if (funcId != null) {
+            callbackToJs(Integer.parseInt(funcId), false, result);
+            onCallback(FUN_ON_CALLBACK + "('" + result + "')");
+        } else {
+            onCallback(FUN_ON_CALLBACK + "('" + result + "')");
+        }
+
+    }
+
+    public void xml2json(final String[] params) {
+        if (params == null || params.length == 0) {
+            onCallback(FUN_ON_CALLBACK + "('" + NO_PARAM +"')");
             return;
         }
+        String funcId = null;
+        if (params.length == 2) {
+            funcId = params[1];
+        }
+        JSONObject jsonObject = new JSONObject();
         String data = getText(params[0]);
-        if (CAN_NOT_GET_CONTENT.equals(data)) {
+        if (TextUtils.isEmpty(data)) {
             onCallback(FUN_ON_CALLBACK + "('" + data +"')");
-            return;
+            try {
+                jsonObject.put("code", EUExCallback.F_C_FAILED);
+                jsonObject.put("msg", CAN_NOT_GET_CONTENT);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                jsonObject = XML.toJSONObject(data);
+            } catch (JSONException e) {
+                Log.i(TAG, e.getMessage());
+                try {
+                    jsonObject.put("code", EUExCallback.F_C_FAILED);
+                    jsonObject.put("msg", XML_PARSE_ERROR);
+                } catch (JSONException e1) {
+                    e1.printStackTrace();
+                }
+            }
         }
-        try {
-            result = XML.toJSONObject(data).toString();
-        } catch (JSONException e) {
-            Log.i(TAG, e.getMessage());
-            result = XML_PARSE_ERROR;
-        }
-        onCallback(FUN_ON_CALLBACK + "('" + result + "')");
-    }
-
-    @Override
-    public void onHandleMessage(Message message) {
-        if(message == null){
-            return;
-        }
-        Bundle bundle = message.getData();
-        switch (message.what) {
-            case MSG_JSON2XML:
-                json2xmlMsg(bundle.getStringArray(BUNDLE_DATA));
-                break;
-            case MSG_XML2JSON:
-                xml2jsonMsg(bundle.getStringArray(BUNDLE_DATA));
-                break;
-            default:
-                super.onHandleMessage(message);
+        if(funcId != null) {
+            callbackToJs(Integer.parseInt(funcId), false, jsonObject);
+        } else{
+            onCallback(FUN_ON_CALLBACK + "('" + jsonObject.toString() + "')");
         }
     }
-
-
     public String getText(String param) {
         String data = null;
         if (param.startsWith(BUtility.F_Widget_RES_SCHEMA) || param.startsWith(BUtility.F_APP_SCHEMA)
@@ -140,13 +119,14 @@ public class EUExJsonXmlTrans extends EUExBase {
                 data = readDataFromFile (realPath);
             }
             if (data.equals("")) {
-                data = CAN_NOT_GET_CONTENT ;
+                data = null ;
             }
         } else {
             data = param;
         }
         return data;
     }
+
     public String readDataFromFile(String filePath) {
         File file = new File(filePath);
         BufferedReader reader = null;
