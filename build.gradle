@@ -24,7 +24,7 @@ android {
     buildToolsVersion "23.0.0"
     defaultConfig {
         // 应用的包名
-        applicationId "org.zywx.wbpalmstar.widgetone.uexJPushDemo"
+        applicationId "org.zywx.wbpalmstar.widgetone.uexJsonXmlTrans"
     }
 
     packagingOptions {
