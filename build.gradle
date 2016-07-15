@@ -13,6 +13,9 @@ repositories {
     flatDir {
         dirs 'libs'
     }
+    maven {
+        url 'https://raw.githubusercontent.com/android-plugin/mvn-repo/master/'
+    }
 }
 dependencies {
     compile fileTree(dir: 'libs', include: '*.jar')
