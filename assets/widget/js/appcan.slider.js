@@ -2,11 +2,15 @@ appcan.define("slider", function($, exports, module) {
     var model_item = '<div class="slider-item ub-fh ub-fv ub-img1 <%=data.id%>" style="background-image:url(<%=data.img%>)">\
     <span class="uabs"><%=data.label%></span>\
     </div>';
+    var model_Conitem='<div class="slider-item1 ub-fh ub-fv" style="position:relative;display:inline-block;font-size:1em;" id="<%=option.index%>">\
+     <div id="note" style="white-space:normal;word-wrap:break-word;width:100%;height:100%;"><%=data.note%></div>\
+     </div>';
     var itemTmp = appcan.view.template(model_item);
+    var ConitemTmp=appcan.view.template(model_Conitem);
     function isWindows(){
+        if(window.navigator.platform == "Win32") return true;
         if(!('ontouchstart' in window)) return true;
     }
-    var bounceState;
     function SliderView(option) {
         appcan.extend(this, appcan.eventEmitter);
         var self = this;
@@ -14,6 +18,9 @@ appcan.define("slider", function($, exports, module) {
             selector : "body",
             dir:'hor',
             hasIndicator:true,
+            hasContent:false,
+            canDown:false,
+            hasCircle:false,
             hasLabel:false,
             aspectRatio:0,
             index:0,
@@ -21,15 +28,8 @@ appcan.define("slider", function($, exports, module) {
         }, option, true);
         
         this.isReset = true;
-        
-        if(uexWindow.getBounce && typeof uexWindow.getBounce === 'function'){
-            appcan.window.getBounceStatus(function(dt,dataType,opId){
-                bounceState = dt;
-            });
-        }else{
-            bounceState =1;
-        }
         self.ele = $(self.option.selector);
+        self.ele.css({'-webkit-transform':'translateZ(0)','transform':'translateZ(0)'});
         if(self.option.aspectRatio){
             self.ele.css("height",self.ele.offset().width*self.option.aspectRatio);
         }
@@ -44,24 +44,33 @@ appcan.define("slider", function($, exports, module) {
     SliderView.prototype = {
         buildItem:function(data){
             var self = this;
+         if(self.option.hasContent){
+            var item = $(ConitemTmp({
+                    data : data,
+                    option : self.option
+                }));
+          self.container.css('font-size','16px');
+           var Hnote=item.find('div[id="note"]');   
+             Hnote.css(data.style);
+            }else{
             var item = $(itemTmp({
                     data : data,
                     option : self.option
                 }));
+            }
             item[0]["lv_data"]=data;
-            
             return item;
         },
         _moveTo:function(index,anim){
             var self = this;
-            
             if(!(anim === false )){
                 self.container.addClass("slider-anim");
                 self.container.on("webkitTransitionEnd",function(){
                     self.container.off("webkitTransitionEnd");
                     self.container.removeClass("slider-anim");
-                    if(self.option.index >= self.option.itemCount)
+                    if(self.option.index >= self.option.itemCount){
                         self.option.index = 0;
+                    }
                     if(self.option.index < 0){
                         self.option.index = self.option.itemCount-1;
                     }
@@ -72,12 +81,27 @@ appcan.define("slider", function($, exports, module) {
             }
             var w=(-(self.option.index+1)*self.ele.offset().width);
             self.container.css("-webkit-transform", "translateX("+w+"px)");
-            var width = self.ele.offset().width / self.option.itemCount;
-            self.focus.css("-webkit-transform", "translateX("+self.option.index * width+"px)");
+            if(self.option.hasIndicator){
+                var width = self.ele.offset().width / self.option.itemCount;
+                self.focus.css("-webkit-transform", "translateX("+self.option.index * width+"px)");
+            }
             if(self.option.hasLabel){
                 self.label.html(self.option.data[self.option.index+1].label);
             }
-        
+            if(self.option.hasCircle){
+                 var name = self.Circle.find('div[name="labContent"]');
+                 var index = self.option.index;
+                 if(index > self.option.itemCount){
+                    index = 0;
+                 }
+                    for(var i = 0;i < name.length;i++){
+                        if(i == index){
+                            name[i].style.cssText= 'margin-right : .5em;float: left;padding: 0.25em;background-color: #ff8a00;border-radius: 50%;';
+                        }else{
+                            name[i].style.cssText = 'margin-right : .5em;float: left;padding: 0.25em;background-color: #cfc1b0;border-radius: 50%;';
+                        }
+                    }
+            }
         },
         drag:function(d){
             var self = this;
@@ -101,7 +125,6 @@ appcan.define("slider", function($, exports, module) {
             data.unshift(data[data.length - 1]);
             data.push(data[1]);
             self.option.data = data;
-            
             for(var i in data){
                 var item = self.buildItem(data[i]);
                 self.container.append(item);
@@ -113,24 +136,50 @@ appcan.define("slider", function($, exports, module) {
                 self.label = self.label || $('<div class="uinn1 ulev-1 ut-s label sc-text-hint"></div>');
                 self.ele.append(self.label);
             }
-            self.focus = self.focus || $('<div class="utra focus bc-head"></div>');
-            self.focus.css("width", width);
-            self.focus.css("-webkit-transform", "translateX("+self.option.index * width+"px)");
-            self.ele.append(self.focus);
-            
+            if(self.option.hasCircle){
+                self.Circle = $('<div class="label1" style="background-color:rgba(152, 139, 123, 0.5);height:1.5em;width: 100%;position: absolute;left: 0px;bottom: 0px;"></div>');
+                var dian = $('<div class="labelzan" style="margin:0 auto;top :.6em;right: .2em;"></div>');
+                var zamcon = $('<div class="labelcon1" name="labContent" style="margin-right : .5em;float: left;padding: 0.25em;background-color: #ff8a00;border-radius: 50%;"></div>');
+                var zamcon1 = $('<div class="labelcon" name="labContent"></div>');
+                for(var tt = 0;tt < self.option.itemCount;tt++){
+                    if(tt == 0){
+                        dian.append(zamcon);
+                    }else{
+                        dian.append('<div class="labelcon" name="labContent" style="margin-right : .5em;float: left;padding: 0.25em;background-color: #cfc1b0;border-radius: 50%;"></div>');
+                    }
+                }
+                if(self.option.site=='right'){
+                dian[0].style.cssText='margin-top:0.75em;margin-left:75%;';
+                }else if(self.option.site=='left'){
+                    dian[0].style.cssText='margin-top:0.75em;margin-left:0;';
+                }
+                dian.css("width",self.option.itemCount+"em");
+                self.Circle.append(dian);
+                self.ele.append(self.Circle);
+            }
+            if(self.option.hasIndicator){
+                self.focus = self.focus || $('<div class="utra focus bc-head"></div>');
+                self.focus.css("width", width);
+                self.focus.css("-webkit-transform", "translateX("+self.option.index * width+"px)");
+                self.ele.append(self.focus);
+            }
             
             self._moveTo(self.option.index,false);
             self.ele.off("swipeMoveLeft").on("swipeMoveLeft",function(evt){
-                if(self.timer) {
-                    clearInterval(self.timer);
-                }
-                self.drag(-evt._args.dx);
+                 if(self.option.index<self.option.itemCount){
+                    if(self.timer) {
+                        clearInterval(self.timer);
+                    }
+                    self.drag(-evt._args.dx);      
+                    }    
             });
             self.ele.off("swipeMoveRight").on("swipeMoveRight",function(evt){
-                if(self.timer) {
-                    clearInterval(self.timer);
+                if(self.option.index>=0){
+                    if(self.timer) {
+                        clearInterval(self.timer);
+                    }
+                    self.drag(evt._args.dx);  
                 }
-                self.drag(evt._args.dx);
             });
             
             //结束的时候
@@ -142,12 +191,16 @@ appcan.define("slider", function($, exports, module) {
                 self.emit("clickItem",self,self.option.index,data[self.option.index+1]);
             });
             self.ele.off("swipeLeft").on("swipeLeft",function(evt){
-                self._moveTo(++self.option.index);
-                self.autoMove(self.option.auto)
+                if(self.option.index<self.option.itemCount){
+                    self._moveTo(++self.option.index);
+                    self.autoMove(self.option.auto);
+                    }            
             });
             self.ele.off("swipeRight").on("swipeRight",function(evt){
-                self._moveTo(--self.option.index);
-                self.autoMove(self.option.auto);
+                if(self.option.index>=0){
+                    self._moveTo(--self.option.index);
+                    self.autoMove(self.option.auto);
+                }
             });
             
             self.ele.off("swipeUp").on("swipeUp",function(evt){
@@ -158,65 +211,6 @@ appcan.define("slider", function($, exports, module) {
                 self._moveTo(self.option.index);
                 self.autoMove(self.option.auto)
             });
-			$(document).on("touchstart",function(evt){
-                var left = self.ele.offset().left;
-                var top = self.ele.offset().top;
-                var width = self.ele.width();
-                var height = self.ele.height();
-                var touch = evt.touches[0];
-                if(touch.pageX > left && touch.pageX < left+width && touch.pageY > top && touch.pageY < top+height){
-                    appcan.window.disableBounce();
-                    appcan.window.setMultilPopoverFlippingEnbaled(1);
-                    return false;
-                }else{
-                    if(bounceState == 1){
-                        appcan.window.enableBounce();
-                    }
-                    appcan.window.setMultilPopoverFlippingEnbaled(0);
-                }
-            });
-            $(document).on("touchmove",function(evt){
-                var left = self.ele.offset().left;
-                var top = self.ele.offset().top;
-                var width = self.ele.width();
-                var height = self.ele.height();
-                var touch = evt.touches[0];
-                if(touch.pageX > left && touch.pageX < left+width && touch.pageY > top && touch.pageY < top+height){
-                    appcan.window.disableBounce();
-                    appcan.window.setMultilPopoverFlippingEnbaled(1);
-                    if(self.timer) clearInterval(self.timer);
-                    return false;
-                }
-            });
-            $(document).on("touchcancel",function(evt){
-                var left = self.ele.offset().left;
-                var top = self.ele.offset().top;
-                var width = self.ele.width();
-                var height = self.ele.height();
-                var touch = evt.touches[0];
-                if(bounceState == 1){
-                    appcan.window.enableBounce();
-                }
-                if(touch.pageX > left && touch.pageX < left+width && touch.pageY > top && touch.pageY < top+height){
-                    appcan.window.setMultilPopoverFlippingEnbaled(0);
-                    return false;
-                }
-            });
-            $(document).on("touchend",function(evt){
-                var left = self.ele.offset().left;
-                var top = self.ele.offset().top;
-                var width = self.ele.width();
-                var height = self.ele.height();
-                var touch = evt.touches[0];
-                if(bounceState == 1){
-                    appcan.window.enableBounce();
-                }
-                if(touch.pageX > left && touch.pageX < left+width && touch.pageY > top && touch.pageY < top+height){
-                    appcan.window.setMultilPopoverFlippingEnbaled(0);
-                    return false;
-                }
-            });
-            
             return self;
         },
         autoMove:function(auto){

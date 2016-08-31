@@ -7,7 +7,7 @@ var model_thinLine =  '<li class="ubb ub bc-border bc-text ub-ac lis" <%if(group
 <div class="radiobox umar-r" name=""><input type="radio" class="uabs ub-con" name="lv_radio_<%=option.id%>"></div>\
 <%}%>\
 <%if(option.hasIcon && data.icon){%>\
-<div class="<%if(option.hasSmallIcon){%>lis-icon-ss<%}else{%>lis-icon-s<%}%> ub-img" style="background-image:url(<%=data.icon%>)"></div>\
+<div class="lazy <%if(option.hasSmallIcon){%>lis-icon-ss<%}else{%>lis-icon-s<%}%> ub-img" data-original="<%=data.icon%>" style="background-image:url(<%=data.icon%>)"></div>\
 <%}%>\
 <div class="lv_title ub-f1 marg-l ub ub-ver ut-m line<%=option.multiLine%>">\
 <%=data.title%>\
@@ -46,7 +46,7 @@ var model_thickLine = '<li <%if(data.id){%>id="<%=data.id%>"<%}%> class="ubb ub 
 <%if(option.hasIcon && data.icon){%>\
 <ul class="ub ub ub-ver">\
 <li class="">\
-<div class="lis-icon ub-img" style="background-image:url(<%=data.icon%>)"></div>\
+<div class="lazy lis-icon ub-img" data-original="<%=data.icon%>" style="background-image:url(<%=data.icon%>)"></div>\
 <div class="ulev-1 bc-text umar-t"><%=data.icontitle%></div>\
 </li>\
 </ul>\
@@ -85,6 +85,7 @@ var model_thickLine = '<li <%if(data.id){%>id="<%=data.id%>"<%}%> class="ubb ub 
     var thickLineTmp = appcan.view.template(model_thickLine);
     var viewid = 1;
     function isWindows() {
+        if(window.navigator.platform == "Win32") return true;
         if (!('ontouchstart' in window))
             return true;
     }

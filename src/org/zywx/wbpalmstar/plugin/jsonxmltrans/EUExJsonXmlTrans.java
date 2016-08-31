@@ -59,7 +59,7 @@ public class EUExJsonXmlTrans extends EUExBase {
             }
         }
         if (funcId != null) {
-            callbackToJs(Integer.parseInt(funcId), false, result);
+            callbackToJs(Integer.parseInt(funcId), false, BUtility.transcoding(result));
             onCallback(FUN_ON_CALLBACK + "('" + result + "')");
         } else {
             onCallback(FUN_ON_CALLBACK + "('" + result + "')");
