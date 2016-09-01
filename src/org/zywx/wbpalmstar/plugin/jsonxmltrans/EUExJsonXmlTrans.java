@@ -46,12 +46,14 @@ public class EUExJsonXmlTrans extends EUExBase {
 
         String data = getText(params[0]);
         String result;
+        int error = 1;
         if (TextUtils.isEmpty(data)) {
             result = CAN_NOT_GET_CONTENT;
         } else {
             try {
                 JSONObject obj = new JSONObject(data);
                 result = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" + XML.toString(obj);
+                error = 0;
             } catch (JSONException e) {
                 Log.e(TAG, e.getMessage());
                 e.printStackTrace();
@@ -59,7 +61,7 @@ public class EUExJsonXmlTrans extends EUExBase {
             }
         }
         if (funcId != null) {
-            callbackToJs(Integer.parseInt(funcId), false, BUtility.transcoding(result));
+            callbackToJs(Integer.parseInt(funcId), false, error, BUtility.transcoding(result));
             onCallback(FUN_ON_CALLBACK + "('" + result + "')");
         } else {
             onCallback(FUN_ON_CALLBACK + "('" + result + "')");
@@ -78,6 +80,7 @@ public class EUExJsonXmlTrans extends EUExBase {
         }
         JSONObject jsonObject = new JSONObject();
         String data = getText(params[0]);
+        int error = 1;
         if (TextUtils.isEmpty(data)) {
             onCallback(FUN_ON_CALLBACK + "('" + data +"')");
             try {
@@ -89,6 +92,7 @@ public class EUExJsonXmlTrans extends EUExBase {
         } else {
             try {
                 jsonObject = XML.toJSONObject(data);
+                error = 0;
             } catch (JSONException e) {
                 Log.i(TAG, e.getMessage());
                 try {
@@ -100,7 +104,12 @@ public class EUExJsonXmlTrans extends EUExBase {
             }
         }
         if(funcId != null) {
-            callbackToJs(Integer.parseInt(funcId), false, jsonObject);
+            if (error == 0) {
+                callbackToJs(Integer.parseInt(funcId), false, error, jsonObject);
+            } else {
+                callbackToJs(Integer.parseInt(funcId), false, error, jsonObject.optString("msg"));
+            }
+
         } else{
             onCallback(FUN_ON_CALLBACK + "('" + jsonObject.toString() + "')");
         }
