@@ -119,10 +119,8 @@ public class EUExJsonXmlTrans extends EUExBase {
         if (param.startsWith(BUtility.F_Widget_RES_SCHEMA) || param.startsWith(BUtility.F_APP_SCHEMA)
                 || param.startsWith(BUtility.F_WIDGET_SCHEMA) || param.startsWith(BUtility.F_SDCARD_PATH)) {
             String realPath = BUtility.makeRealPath(
-                    BUtility.makeUrl(mBrwView.getCurrentUrl(), param),
-                    mBrwView.getCurrentWidget().m_widgetPath,
-                    mBrwView.getCurrentWidget().m_wgtType);
-            if (param.startsWith(BUtility.F_Widget_RES_SCHEMA)) {
+                    BUtility.makeUrl(mBrwView.getCurrentUrl(), param), mBrwView);
+            if (realPath.startsWith("widget/")) {
                 data =  getFromAssets(realPath);
             } else {
                 data = readDataFromFile (realPath);
